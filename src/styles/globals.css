@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: "Marcellus", serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    font-family: "Special Elite", cursive;
+  }
+
+  .title {
+    font-family: "Special Elite", cursive;
+  }
+}
+
+.ql-container {
+  background-color: #cfba7b;
+  color: rgb(40, 36, 37);
+}

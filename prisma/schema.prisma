@@ -1,0 +1,182 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DB_URL")
+}
+
+model Article {
+  id           Int           @id @unique @default(autoincrement())
+  title        String        @db.VarChar(255)
+  date         DateTime      @default(now()) @db.Timestamp(0)
+  authorId     Int           @default(0)
+  text         String        @db.Text
+  slug         String        @unique @db.VarChar(255)
+  categoryId   Int           @default(0)
+  featured     Boolean       @default(false)
+  User         User          @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ArticleAuthor")
+  BlogCategory BlogCategory  @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ArticleCategory")
+  BlogComment  BlogComment[]
+  Tags         Tags[]
+
+  @@index([categoryId], map: "ArticleCategory")
+  @@index([title, date, authorId, slug, categoryId, featured], map: "title")
+  @@index([authorId], map: "ArticleAuthor")
+}
+
+model BlogComment {
+  id        Int      @id @unique @default(autoincrement())
+  articleId Int      @default(0)
+  text      String   @db.Text
+  date      DateTime @default(now()) @db.Date
+  authorId  Int      @default(0)
+  votes     Int      @default(0)
+  User      User     @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "BlogCommentAuthor")
+  Article   Article  @relation(fields: [articleId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "CommentArticle")
+
+  @@index([articleId], map: "CommentArticle")
+  @@index([authorId], map: "BlogCommentAuthor")
+}
+
+model ChatMessages {
+  id          Int       @id @default(autoincrement())
+  roomId      Int
+  authorId    Int
+  recipientId Int       @default(0)
+  time        DateTime  @default(now()) @db.Timestamp(0)
+  message     String    @db.Text
+  type        String    @default("chat") @db.VarChar(20)
+  User        User      @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ChatMessages_ibfk_2")
+  ChatRooms   ChatRooms @relation(fields: [roomId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ChatMessages_ibfk_4")
+
+  @@index([authorId], map: "authorId")
+  @@index([recipientId], map: "recipientId")
+  @@index([roomId], map: "roomId")
+}
+
+model ChatRooms {
+  id           Int            @id @default(autoincrement())
+  name         String         @unique(map: "name") @db.VarChar(60)
+  creator      Int
+  date         DateTime       @default(now()) @db.Timestamp(0)
+  ChatMessages ChatMessages[]
+}
+
+model GalleryComment {
+  id        Int      @id @unique @default(autoincrement())
+  galleryId Int      @default(0)
+  text      String   @db.Text
+  date      DateTime @default(now()) @db.Date
+  authorId  Int      @default(0)
+  votes     Int      @default(0)
+  Gallery   Gallery  @relation(fields: [galleryId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "CommentGallery")
+  User      User     @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "GaleryCommentAuthor")
+
+  @@index([authorId], map: "GalleryCommentAuthor")
+  @@index([galleryId], map: "CommentGallery")
+}
+
+model Gallery {
+  id              Int              @id @unique @default(autoincrement())
+  title           String           @db.VarChar(255)
+  slug            String           @unique(map: "slug") @db.VarChar(255)
+  date            DateTime         @default(now()) @db.Timestamp(0)
+  categoryId      Int              @default(0)
+  featured        Boolean          @default(false)
+  authorId        Int              @default(0)
+  description     String           @db.VarChar(255)
+  Entry           Entry[]
+  User            User             @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "GalleryAuthor")
+  GalleryCategory GalleryCategory  @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "GalleryCategory")
+  GalleryComment  GalleryComment[]
+  Tags            Tags[]
+
+  @@index([authorId], map: "GalleryAuthor")
+  @@index([categoryId], map: "GalleryCategory")
+  @@index([title, date, authorId, slug, categoryId, featured], map: "title")
+}
+
+model Entry {
+  id        Int     @id @unique @default(autoincrement())
+  galleryId Int     @default(0)
+  thumb     String  @default("") @db.VarChar(255)
+  path      String  @db.VarChar(255)
+  height    Int
+  width     Int
+  Gallery   Gallery @relation(fields: [galleryId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "EntryGallery")
+
+  @@index([galleryId], map: "EntryGallery")
+}
+
+model Sessions {
+  session_id String  @id @db.VarChar(128)
+  expires    Int     @db.UnsignedInt
+  data       String? @db.MediumText
+}
+
+model User {
+  id             Int              @id @unique @default(autoincrement())
+  email          String           @unique @db.VarChar(255)
+  password       String           @default("") @db.VarChar(255)
+  name           String           @db.VarChar(255)
+  joined         DateTime         @default(now()) @db.Timestamp(0)
+  verified       Boolean          @default(false)
+  admin          Boolean          @default(false)
+  avatar         String           @default("") @db.VarChar(255)
+  bio            String           @default("") @db.Text
+  slug           String           @unique(map: "slug") @db.VarChar(255)
+  chat           Int              @default(1)
+  socket         String           @default("") @db.VarChar(255)
+  ChatMessages   ChatMessages[]
+  Article        Article[]
+  BlogComment    BlogComment[]
+  Gallery        Gallery[]
+  GalleryComment GalleryComment[]
+  UserSettings   UserSettings?
+}
+
+model Tags {
+  id        Int     @unique(map: "id") @default(autoincrement())
+  type      String  @db.VarChar(255)
+  text      String  @db.VarChar(20)
+  articleId Int     @default(0)
+  galleryId Int     @default(0)
+  Article   Article @relation(fields: [articleId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Tags_ibfk_1")
+  Gallery   Gallery @relation(fields: [galleryId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Tags_ibfk_2")
+
+  @@index([articleId], map: "articleId")
+  @@index([galleryId], map: "galleryId")
+  @@index([text], map: "text")
+}
+
+model BlogCategory {
+  id      Int       @id @unique(map: "Category_id_key") @default(autoincrement())
+  name    String    @db.VarChar(255)
+  slug    String    @db.VarChar(255)
+  parent  Int       @default(0)
+  count   Int       @default(0)
+  hidden  Boolean   @default(false)
+  Article Article[]
+}
+
+model GalleryCategory {
+  id      Int       @id @unique(map: "Category_id_key") @default(autoincrement())
+  name    String    @db.VarChar(255)
+  slug    String    @db.VarChar(255)
+  parent  Int       @default(0)
+  count   Int       @default(0)
+  hidden  Boolean   @default(false)
+  Gallery Gallery[]
+}
+
+model UserSettings {
+  id           Int    @id @unique @default(autoincrement())
+  uid          Int    @unique(map: "uid")
+  avatarWidth  Int
+  avatarHeight Int
+  perPage      Int
+  pageSort     String @db.VarChar(255)
+  User         User   @relation(fields: [uid], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "UserSettings_ibfk_1")
+}
